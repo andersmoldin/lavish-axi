@@ -6983,6 +6983,59 @@ test("phone chrome boots with the conversation docked and raises it on tap", asy
   assert.equal(sheetState(chrome).open, false);
 });
 
+// ---- Desktop sidebar toggle ----
+
+function sidebarState(chrome) {
+  const toggle = chrome.element("sidebarToggle");
+  return {
+    hidden: chrome.element("body").classList.contains("sidebar-hidden"),
+    expanded: toggle["aria-expanded"],
+    label: toggle["aria-label"],
+    title: toggle.title,
+    stored: chrome.storage.get("lavish-axi:sidebar-hidden:abc") || null,
+  };
+}
+
+test("desktop chrome hides and shows the conversation sidebar from the top bar", async () => {
+  const chrome = await createChromeHarness();
+
+  assert.deepEqual(sidebarState(chrome), {
+    hidden: false,
+    expanded: "true",
+    label: "Hide sidebar",
+    title: "Hide sidebar",
+    stored: null,
+  });
+
+  chrome.element("sidebarToggle").dispatch("click", {});
+  assert.deepEqual(sidebarState(chrome), {
+    hidden: true,
+    expanded: "false",
+    label: "Show sidebar",
+    title: "Show sidebar",
+    stored: "1",
+  });
+
+  chrome.element("sidebarToggle").dispatch("click", {});
+  assert.deepEqual(sidebarState(chrome), {
+    hidden: false,
+    expanded: "true",
+    label: "Hide sidebar",
+    title: "Hide sidebar",
+    stored: null,
+  });
+});
+
+test("desktop chrome restores a hidden sidebar across a chrome reload", async () => {
+  const storage = new Map([["lavish-axi:sidebar-hidden:abc", "1"]]);
+  const chrome = await createChromeHarness({ storage });
+
+  const state = sidebarState(chrome);
+  assert.equal(state.hidden, true);
+  assert.equal(state.expanded, "false");
+  assert.equal(state.label, "Show sidebar");
+});
+
 test("phone chrome restores an open sheet across a chrome reload", async () => {
   const storage = new Map([["lavish-axi:sheet-open:abc", "1"]]);
   const chrome = await createChromeHarness({ mobile: true, storage });

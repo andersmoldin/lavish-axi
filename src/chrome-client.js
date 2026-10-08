@@ -118,6 +118,7 @@ const panel = /** @type {HTMLElement} */ (document.getElementById("panel"));
 const panelHead = /** @type {HTMLDivElement} */ (document.getElementById("panelHead"));
 const panelSummary = /** @type {HTMLSpanElement} */ (document.getElementById("panelSummary"));
 const panelToggle = /** @type {HTMLButtonElement} */ (document.getElementById("panelToggle"));
+const sidebarToggle = /** @type {HTMLButtonElement} */ (document.getElementById("sidebarToggle"));
 const panelScrim = /** @type {HTMLDivElement} */ (document.getElementById("panelScrim"));
 const sendButton = /** @type {HTMLButtonElement} */ (document.getElementById("send"));
 const sendAndEndButton = /** @type {HTMLButtonElement} */ (document.getElementById("sendAndEnd"));
@@ -1470,6 +1471,43 @@ if (window.visualViewport && typeof window.visualViewport.addEventListener === "
 }
 window.addEventListener("resize", syncVisualViewport);
 syncVisualViewport();
+
+// ---- Desktop sidebar toggle ----
+// Wide layouts have no dock to lower, so the top bar carries a toggle that collapses the
+// conversation panel and gives the artifact the full width. chrome.css applies the collapse only
+// above the phone breakpoint and hides the toggle below it, leaving the sheet untouched there.
+const sidebarStorageKey = "lavish-axi:sidebar-hidden:" + key;
+let sidebarHidden = readSidebarHidden();
+
+function readSidebarHidden() {
+  try {
+    return sessionStorage.getItem(sidebarStorageKey) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setSidebarHidden(hidden) {
+  sidebarHidden = Boolean(hidden);
+  try {
+    if (sidebarHidden) sessionStorage.setItem(sidebarStorageKey, "1");
+    else sessionStorage.removeItem(sidebarStorageKey);
+  } catch {
+    // Storage refused only stops the choice surviving a reload.
+  }
+  applySidebarState();
+}
+
+function applySidebarState() {
+  document.body.classList.toggle("sidebar-hidden", sidebarHidden);
+  const label = sidebarHidden ? "Show sidebar" : "Hide sidebar";
+  sidebarToggle.setAttribute("aria-expanded", sidebarHidden ? "false" : "true");
+  sidebarToggle.setAttribute("aria-label", label);
+  sidebarToggle.title = label;
+}
+
+sidebarToggle.addEventListener("click", () => setSidebarHidden(!sidebarHidden));
+applySidebarState();
 
 function scrollElementIntoView(el) {
   el.scrollIntoView({ block: "nearest", inline: "nearest" });
