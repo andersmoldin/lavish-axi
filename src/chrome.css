@@ -535,17 +535,24 @@ body.lavish {
 .sidebar-button[aria-expanded="false"] .sidebar-icon-pane {
   fill-opacity: 0;
 }
-/* While the sidebar is hidden, a dot marks queued notes or an agent reply the user has not seen. */
+/* While the sidebar is hidden, the toggle lights up and a dot on its corner marks queued notes or
+   an agent reply the user has not seen. The ring in the bar color keeps the dot legible. */
+.sidebar-button.is-accent,
+.sidebar-button.is-unread {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 .sidebar-button.is-accent::after,
 .sidebar-button.is-unread::after {
   content: "";
   position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 7px;
-  height: 7px;
+  top: -5px;
+  right: -5px;
+  width: 10px;
+  height: 10px;
   border-radius: var(--radius-pill);
   background: var(--accent);
+  box-shadow: 0 0 0 2px var(--bg-bar);
 }
 /* The collapse is a wide-layout affordance only: the phone layout already docks the panel as a
    sheet, so there the toggle is gone and a stored choice has no effect. */

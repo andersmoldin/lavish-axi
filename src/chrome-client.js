@@ -1374,6 +1374,12 @@ function renderSheetSummary() {
   panelSummary.classList.toggle("is-unread", summary.unread);
   sidebarToggle.classList.toggle("is-accent", sidebarHidden && summary.accent);
   sidebarToggle.classList.toggle("is-unread", sidebarHidden && summary.unread);
+  let label = "Hide sidebar";
+  if (sidebarHidden && summary.unread) label = "Show sidebar (new reply)";
+  else if (sidebarHidden && summary.accent) label = "Show sidebar (" + summary.text + ")";
+  else if (sidebarHidden) label = "Show sidebar";
+  sidebarToggle.setAttribute("aria-label", label);
+  sidebarToggle.title = label;
 }
 
 // A brief pulse on the dock when something the user should notice lands while the sheet is
@@ -1507,10 +1513,7 @@ function setSidebarHidden(hidden) {
 
 function applySidebarState() {
   document.body.classList.toggle("sidebar-hidden", sidebarHidden);
-  const label = sidebarHidden ? "Show sidebar" : "Hide sidebar";
   sidebarToggle.setAttribute("aria-expanded", sidebarHidden ? "false" : "true");
-  sidebarToggle.setAttribute("aria-label", label);
-  sidebarToggle.title = label;
   renderSheetSummary();
 }
 
@@ -1529,14 +1532,16 @@ function editQueuedPrompt(index, { reveal = true } = {}) {
   const prompt = queued[index];
   if (ended || !isPromptEditable(prompt)) return;
   const id = promptIdentity(prompt);
-  if (!id || id === editingPromptId) return;
+  if (!id) return;
+  // Reopening the note already in edit still shows the panel the user collapsed meanwhile.
+  if (isMobileSheet()) setSheetOpen(true);
+  else if (sidebarHidden) setSidebarHidden(false);
+  if (id === editingPromptId) return;
   // Moving to another note keeps what was typed into the first, the way leaving a field does.
   commitQueuedEdit();
   editingPromptId = id;
   editingDraft = String(prompt.prompt || "");
   editFocusPending = true;
-  if (isMobileSheet()) setSheetOpen(true);
-  else if (sidebarHidden) setSidebarHidden(false);
   render();
   if (reveal && prompt.selector) postToFrame({ type: "lavish:revealElement", selector: String(prompt.selector) });
 }

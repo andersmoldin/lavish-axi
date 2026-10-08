@@ -7044,23 +7044,30 @@ test("a hidden desktop sidebar marks its toggle for queued notes and unseen repl
   chrome.eventSource().listeners.get("agent-reply")({ data: JSON.stringify({ text: "Seen already." }) });
   chrome.element("sidebarToggle").dispatch("click", {});
   assert.doesNotMatch(toggleClass(), /is-unread|is-accent/);
+  assert.equal(sidebarState(chrome).label, "Show sidebar");
 
   chrome.eventSource().listeners.get("agent-reply")({ data: JSON.stringify({ text: "Renamed the payment step." }) });
   assert.match(toggleClass(), /is-unread/);
+  assert.equal(sidebarState(chrome).label, "Show sidebar (new reply)");
+  assert.equal(sidebarState(chrome).title, "Show sidebar (new reply)");
 
   chrome.sendFrameMessage({
     type: "lavish:queuePrompt",
     prompt: { prompt: "Call this Payment method", selector: "h2", tag: "element", text: "Payment" },
   });
   assert.match(toggleClass(), /is-accent/);
+  assert.equal(sidebarState(chrome).label, "Show sidebar (1 queued)");
 
   // Showing the sidebar shows the reply and the queue, so the toggle owes nothing more, and hiding
   // it again only reports the queue that is still waiting.
   chrome.element("sidebarToggle").dispatch("click", {});
   assert.doesNotMatch(toggleClass(), /is-unread|is-accent/);
+  assert.equal(sidebarState(chrome).label, "Hide sidebar");
+  assert.equal(sidebarState(chrome).title, "Hide sidebar");
   chrome.element("sidebarToggle").dispatch("click", {});
   assert.match(toggleClass(), /is-accent/);
   assert.doesNotMatch(toggleClass(), /is-unread/);
+  assert.equal(sidebarState(chrome).label, "Show sidebar (1 queued)");
 });
 
 test("opening a queued note from the artifact shows a hidden desktop sidebar", async () => {
@@ -7073,6 +7080,22 @@ test("opening a queued note from the artifact shows a hidden desktop sidebar", a
 
   assert.equal(sidebarState(chrome).hidden, false);
   assert.match(chrome.element("queuedLog").innerHTML, /class="queued-edit-input"[^>]*>Tighten this heading</);
+});
+
+test("reopening the note already in edit shows a hidden desktop sidebar and keeps the draft", async () => {
+  const chrome = await createChromeHarness();
+  queueHeadingNote(chrome, "Tighten this heading");
+  chrome.sendFrameMessage({ type: "lavish:editQueuedAnchor", selector: "main > h2" });
+  typeIntoQueuedEdit(chrome, "Tighten this heading a lot");
+  chrome.element("sidebarToggle").dispatch("click", {});
+  assert.equal(sidebarState(chrome).hidden, true);
+
+  chrome.sendFrameMessage({ type: "lavish:editQueuedAnchor", selector: "main > h2" });
+
+  assert.equal(sidebarState(chrome).hidden, false);
+  queuedLogKey(chrome, "Enter");
+  assert.match(chrome.element("queuedLog").innerHTML, /Tighten this heading a lot/);
+  assert.doesNotMatch(chrome.element("queuedLog").innerHTML, /queued-edit-input/);
 });
 
 test("phone chrome restores an open sheet across a chrome reload", async () => {
