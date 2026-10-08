@@ -7036,6 +7036,45 @@ test("desktop chrome restores a hidden sidebar across a chrome reload", async ()
   assert.equal(state.label, "Show sidebar");
 });
 
+test("a hidden desktop sidebar marks its toggle for queued notes and unseen replies", async () => {
+  const chrome = await createChromeHarness({ fetchImpl: async () => ({ ok: true, json: async () => ({}) }) });
+  const toggleClass = () => String(chrome.element("sidebarToggle").classList);
+
+  // A reply that lands while the sidebar shows was seen, so hiding it afterwards marks nothing.
+  chrome.eventSource().listeners.get("agent-reply")({ data: JSON.stringify({ text: "Seen already." }) });
+  chrome.element("sidebarToggle").dispatch("click", {});
+  assert.doesNotMatch(toggleClass(), /is-unread|is-accent/);
+
+  chrome.eventSource().listeners.get("agent-reply")({ data: JSON.stringify({ text: "Renamed the payment step." }) });
+  assert.match(toggleClass(), /is-unread/);
+
+  chrome.sendFrameMessage({
+    type: "lavish:queuePrompt",
+    prompt: { prompt: "Call this Payment method", selector: "h2", tag: "element", text: "Payment" },
+  });
+  assert.match(toggleClass(), /is-accent/);
+
+  // Showing the sidebar shows the reply and the queue, so the toggle owes nothing more, and hiding
+  // it again only reports the queue that is still waiting.
+  chrome.element("sidebarToggle").dispatch("click", {});
+  assert.doesNotMatch(toggleClass(), /is-unread|is-accent/);
+  chrome.element("sidebarToggle").dispatch("click", {});
+  assert.match(toggleClass(), /is-accent/);
+  assert.doesNotMatch(toggleClass(), /is-unread/);
+});
+
+test("opening a queued note from the artifact shows a hidden desktop sidebar", async () => {
+  const chrome = await createChromeHarness();
+  queueHeadingNote(chrome, "Tighten this heading");
+  chrome.element("sidebarToggle").dispatch("click", {});
+  assert.equal(sidebarState(chrome).hidden, true);
+
+  chrome.sendFrameMessage({ type: "lavish:editQueuedAnchor", selector: "main > h2" });
+
+  assert.equal(sidebarState(chrome).hidden, false);
+  assert.match(chrome.element("queuedLog").innerHTML, /class="queued-edit-input"[^>]*>Tighten this heading</);
+});
+
 test("phone chrome restores an open sheet across a chrome reload", async () => {
   const storage = new Map([["lavish-axi:sheet-open:abc", "1"]]);
   const chrome = await createChromeHarness({ mobile: true, storage });

@@ -520,6 +520,7 @@ body.lavish {
   border-radius: 9px;
   cursor: pointer;
   padding: 0;
+  position: relative;
 }
 .sidebar-button:hover {
   border-color: var(--border-strong);
@@ -533,6 +534,18 @@ body.lavish {
 }
 .sidebar-button[aria-expanded="false"] .sidebar-icon-pane {
   fill-opacity: 0;
+}
+/* While the sidebar is hidden, a dot marks queued notes or an agent reply the user has not seen. */
+.sidebar-button.is-accent::after,
+.sidebar-button.is-unread::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
 }
 /* The collapse is a wide-layout affordance only: the phone layout already docks the panel as a
    sheet, so there the toggle is gone and a stored choice has no effect. */
